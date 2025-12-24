@@ -1,70 +1,28 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hall Of Fame – Wyniki</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-<style>
-body{margin:0;padding:20px;font-family:'Playfair Display',serif;background:radial-gradient(circle at top,#1a1a1a,#000);color:#fff;}
-.top-content{text-align:center;margin-bottom:40px;}
-.top-content h1{font-size:48px;margin:0;letter-spacing:3px;color:#d4af37;}
-.top-content span{display:block;margin-top:10px;font-size:20px;letter-spacing:4px;color:#d4af37;}
-.section{margin-bottom:60px;}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1000px;margin:auto;}
-.grid-item{display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,0.05);border-radius:15px;padding:10px;text-align:center;backdrop-filter:blur(5px);transition:transform .3s;}
-.grid-item:hover{transform:scale(1.05);}
-.grid-item img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;margin-bottom:10px;}
-.grid-item span{margin-bottom:5px;font-size:16px;color:#fff;}
-.position{font-weight:bold;color:#d4af37;margin-bottom:5px;}
-.button-group{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-top:40px;}
-.btn{padding:14px 36px;border-radius:30px;cursor:pointer;text-decoration:none;background:linear-gradient(135deg,#d4af37,#f5e28c);color:#000;}
-</style>
-</head>
-<body>
-
-<div class="top-content">
-  <h1>Hall Of Fame – Wyniki</h1>
-  <span>Top 3 w każdej kategorii</span>
-</div>
-
-<div id="results"></div>
-
-<div class="button-group">
-  <a href="index.html" class="btn">Powrót na stronę główną</a>
-</div>
-
 <script>
-async function renderResults(){
-  const res = await fetch('/api/results');
-  const data = await res.json();
-  const container = document.getElementById('results');
-  container.innerHTML='';
-  
-  for(const [category, participants] of Object.entries(data)){
-    const section=document.createElement('div');
-    section.className='section';
-    section.innerHTML=`<div class="top-content"><h1>${category}</h1></div>`;
-    
-    const grid=document.createElement('div');
-    grid.className='grid';
-    
-    participants.forEach((p,i)=>{
-      const item=document.createElement('div');
-      item.className='grid-item';
-      item.innerHTML=`<span class="position">${i+1}️⃣</span>
-                      <img src="images/${p.name.toLowerCase()}.jpg" alt="${p.name}">
-                      <span>${p.name} (${p.votes} głosów)</span>`;
-      grid.appendChild(item);
-    });
-    
-    section.appendChild(grid);
-    container.appendChild(section);
+async function loadResults() {
+  try {
+    const res = await fetch('/api/vote');
+    const data = await res.json();
+
+    const container = document.getElementById('results');
+
+    for (const category in data) {
+      const participants = Object.entries(data[category])
+        .sort((a,b) => b[1] - a[1]) // sortuj malejąco
+        .slice(0,3); // top 3
+
+      const div = document.createElement('div');
+      div.className = 'category';
+
+      div.innerHTML = `<h2>${category}</h2>` +
+        participants.map(([name,votes], i) => `<p>${i+1}. ${name} – ${votes} głosów</p>`).join('');
+
+      container.appendChild(div);
+    }
+  } catch(err) {
+    console.error(err);
   }
 }
 
-renderResults();
+window.onload = loadResults;
 </script>
-
-</body>
-</html>
