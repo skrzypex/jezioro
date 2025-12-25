@@ -1,28 +1,23 @@
-// api/vote.js
+import { createClient } from '@supabase/supabase-js';
 
-let votes = {}; // w pamięci serwera, resetuje się przy restarcie
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method === 'POST') {
-    const { participant, category } = req.body;
+    const { category, participant } = req.body;
 
-    if (!participant || !category) {
-      return res.status(400).json({ error: 'Brakuje danych' });
-    }
+    const { data, error } = await supabase
+      .from('votes')
+      .update({ votes: supabase.raw('votes + 1') })
+      .eq('category', category)
+      .eq('participant', participant);
 
-    // jeśli nie było jeszcze kategorii lub uczestnika, inicjalizujemy
-    if (!votes[category]) votes[category] = {};
-    if (!votes[category][participant]) votes[category][participant] = 0;
-
-    votes[category][participant]++;
-
-    return res.status(200).json({ message: `Twój głos na ${participant} został zapisany!` });
-  } 
-  else if (req.method === 'GET') {
-    // zwracamy wszystkie głosy
-    return res.status(200).json(votes);
-  } 
-  else {
-    return res.status(405).json({ error: 'Metoda niedozwolona' });
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(200).json({ success: true });
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
   }
 }
